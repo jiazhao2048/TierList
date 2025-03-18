@@ -22,6 +22,8 @@ export interface TierListSettings {
 	from: string;
 	where: string;
 	lastSlotType: InputType;
+	autoSwitchMode: boolean;
+	preferredEditMode: 'source' | 'live' | 'reading';
 }
 
 export const DEFAULT_SETTINGS: TierListSettings = {
@@ -43,7 +45,9 @@ export const DEFAULT_SETTINGS: TierListSettings = {
 	animation: 150,
 	from: '',
 	where: "",
-	lastSlotType: InputType.Text
+	lastSlotType: InputType.Text,
+	autoSwitchMode: false,
+	preferredEditMode: 'source',
 };
 
 export function setSetting(key: string, value: string, settings: TierListSettings) {
@@ -294,6 +298,31 @@ export class SettingTab extends PluginSettingTab {
 				}
 			}
 		});
+
+		new Setting(containerEl)
+			.setName('自动切换编辑模式')
+			.setDesc('使用 Ctrl+Click 导航到文件时自动切换到指定的编辑模式')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.autoSwitchMode)
+				.onChange(async (value) => {
+					this.plugin.settings.autoSwitchMode = value;
+					await this.plugin.saveSettings();
+				})
+			);
+
+		new Setting(containerEl)
+			.setName('首选编辑模式')
+			.setDesc('选择导航到文件时要切换的编辑模式')
+			.addDropdown(dropdown => dropdown
+				.addOption('source', '源代码模式')
+				.addOption('live', '实时预览模式')
+				.addOption('reading', '阅读模式')
+				.setValue(this.plugin.settings.preferredEditMode)
+				.onChange(async (value: 'source' | 'live' | 'reading') => {
+					this.plugin.settings.preferredEditMode = value;
+					await this.plugin.saveSettings();
+				})
+			);
 	}
 }
 

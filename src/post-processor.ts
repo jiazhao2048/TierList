@@ -175,7 +175,7 @@ export function generateTierListPostProcessor(plugin: TierListPlugin): (tierList
                     return;
                 }
 
-                if (event.ctrlKey) {
+                if (event.ctrlKey || event.metaKey) {
                     event.stopPropagation();
 
                     const link = slot.find('a.internal-link, a.external-link');
@@ -184,7 +184,35 @@ export function generateTierListPostProcessor(plugin: TierListPlugin): (tierList
                         const href = slot.getAttr('href') || '';
                         const file = app.metadataCache.getFirstLinkpathDest(href, '');
                         if (file) {
-                            app.workspace.openLinkText(href, file.path);
+                            app.workspace.openLinkText(href, file.path, event.ctrlKey || event.metaKey);
+                            
+                            if (plugin.settings.autoSwitchMode) {
+                                setTimeout(() => {
+                                    const activeLeaf = app.workspace.activeLeaf;
+                                    if (activeLeaf) {
+                                        switch (plugin.settings.preferredEditMode) {
+                                            case 'source':
+                                                activeLeaf.setViewState({
+                                                    type: 'markdown',
+                                                    state: { mode: 'source' }
+                                                });
+                                                break;
+                                            case 'live':
+                                                activeLeaf.setViewState({
+                                                    type: 'markdown',
+                                                    state: { mode: 'live' }
+                                                });
+                                                break;
+                                            case 'reading':
+                                                activeLeaf.setViewState({
+                                                    type: 'markdown',
+                                                    state: { mode: 'preview' }
+                                                });
+                                                break;
+                                        }
+                                    }
+                                }, 100);
+                            }
                         }
                     }
                     else if (link) {
@@ -193,7 +221,35 @@ export function generateTierListPostProcessor(plugin: TierListPlugin): (tierList
                             if (link.hasClass('internal-link')) {
                                 const file = app.metadataCache.getFirstLinkpathDest(href, '');
                                 if (file) {
-                                    app.workspace.openLinkText(href, file.path);
+                                    app.workspace.openLinkText(href, file.path, event.ctrlKey || event.metaKey);
+                                    
+                                    if (plugin.settings.autoSwitchMode) {
+                                        setTimeout(() => {
+                                            const activeLeaf = app.workspace.activeLeaf;
+                                            if (activeLeaf) {
+                                                switch (plugin.settings.preferredEditMode) {
+                                                    case 'source':
+                                                        activeLeaf.setViewState({
+                                                            type: 'markdown',
+                                                            state: { mode: 'source' }
+                                                        });
+                                                        break;
+                                                    case 'live':
+                                                        activeLeaf.setViewState({
+                                                            type: 'markdown',
+                                                            state: { mode: 'live' }
+                                                        });
+                                                        break;
+                                                    case 'reading':
+                                                        activeLeaf.setViewState({
+                                                            type: 'markdown',
+                                                            state: { mode: 'preview' }
+                                                        });
+                                                        break;
+                                                }
+                                            }
+                                        }, 100);
+                                    }
                                 }
                             } else {
                                 window.open(href, '_blank');
@@ -214,7 +270,35 @@ export function generateTierListPostProcessor(plugin: TierListPlugin): (tierList
                                         const href = match[1];
                                         const file = app.metadataCache.getFirstLinkpathDest(href, '');
                                         if (file) {
-                                            app.workspace.openLinkText(href, file.path);
+                                            app.workspace.openLinkText(href, file.path, event.ctrlKey || event.metaKey);
+                                            
+                                            if (plugin.settings.autoSwitchMode) {
+                                                setTimeout(() => {
+                                                    const activeLeaf = app.workspace.activeLeaf;
+                                                    if (activeLeaf) {
+                                                        switch (plugin.settings.preferredEditMode) {
+                                                            case 'source':
+                                                                activeLeaf.setViewState({
+                                                                    type: 'markdown',
+                                                                    state: { mode: 'source' }
+                                                                });
+                                                                break;
+                                                            case 'live':
+                                                                activeLeaf.setViewState({
+                                                                    type: 'markdown',
+                                                                    state: { mode: 'live' }
+                                                                });
+                                                                break;
+                                                            case 'reading':
+                                                                activeLeaf.setViewState({
+                                                                    type: 'markdown',
+                                                                    state: { mode: 'preview' }
+                                                                });
+                                                                break;
+                                                        }
+                                                    }
+                                                }, 100);
+                                            }
                                         }
                                     }
                                 }
