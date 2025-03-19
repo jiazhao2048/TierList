@@ -10,7 +10,8 @@ export enum InputType {
     InternalEmbed = "Internal Embed",
     InternalLink = "Internal Link / Cover",
     ExternalEmbed = "External Embed",
-    ExternalLink = "External Link"
+    ExternalLink = "External Link",
+    InternalLinkCoverText = "Internal Link / Cover / Text"
 }
 
 class ParsedInput {
@@ -38,6 +39,8 @@ class ParsedInput {
         rawValue = rawValue.slice(2);
 
         const styleMatch = rawValue.match(/<span style="([^">]+);">(.+?)<\/span>/);
+        const coverTextMatch = rawValue.match(/<span(?:[^>]*?)data-cover-text="([^">]*?)"(?:[^>]*?)>(.+?)<\/span>/);
+        
         if (styleMatch) {
             const styleString = styleMatch[1];
             rawValue = styleMatch[2];
@@ -51,6 +54,34 @@ class ParsedInput {
                     this.parseTransform(value);
                 }
             }
+        } else if (coverTextMatch) {
+            // 处理具有data-cover-text属性的span标签
+            this.type = InputType.InternalLinkCoverText;
+            this.alias = coverTextMatch[1]; // 提取data-cover-text的值作为alias
+            
+            // 检查是否同时有样式属性
+            const styleMatch = coverTextMatch[0].match(/style="([^">]+);?"/);
+            if (styleMatch) {
+                const styleString = styleMatch[1];
+                const styles = styleString.split(";").map(s => s.trim()).filter(s => s);
+                for (const style of styles) {
+                    const [key, value] = style.split(":").map(s => s.trim());
+                    if (key === "background" || key === 'background-color') {
+                        this.color = value;
+                    } else if (key === "transform") {
+                        this.parseTransform(value);
+                    }
+                }
+            }
+            
+            // 提取内部的链接
+            const internalLinkMatch = coverTextMatch[2].match(/\[\[(.*?)(?:\|(.*?))?\]\]/);
+            if (internalLinkMatch) {
+                this.value = internalLinkMatch[1];
+                // 如果链接本身带有别名，我们忽略它，因为我们已经有了data-cover-text作为显示文本
+            }
+            
+            return; // 已经处理完毕，不需要继续下面的匹配
         }
 
         const internalEmbedMatch = rawValue.match(/!\[\[(.*?)(?:\|(.*?))?\]\]/);
@@ -151,6 +182,9 @@ class ParsedInput {
             case InputType.InternalLink:
                 output = `[[${this.value}${this.alias ? ` | ${this.alias}` : ""}]]`;
                 break;
+            case InputType.InternalLinkCoverText:
+                output = `<span data-cover-text="${this.alias || ''}">[[${this.value}]]</span>`;
+                break;
             case InputType.ExternalEmbed:
                 output = `![${this.alias || ""}](${this.value})`;
                 break;
@@ -172,7 +206,11 @@ class ParsedInput {
         const style = styles.join(" ").trim();
 
         if (style) {
-            output = `<span style="${style}">${output}</span>`;
+            if (this.type === InputType.InternalLinkCoverText) {
+                output = output.replace('<span', `<span style="${style}"`);
+            } else {
+                output = `<span style="${style}">${output}</span>`;
+            }
         }
 
         output = `${this.isUseTab ? "\t" : ""}- ${output}`;
@@ -217,7 +255,7 @@ export class SlotModal extends Modal {
             .clear()
             .setName("Value")
             .addText((text) => {
-                if (this.value.type == InputType.InternalEmbed || this.value.type == InputType.InternalLink) {
+                if (this.value.type == InputType.InternalEmbed || this.value.type == InputType.InternalLink || this.value.type == InputType.InternalLinkCoverText) {
                     new FileInputSuggest(this.app, text.inputEl);
                 }
                 this.valueComponent = text;
@@ -235,6 +273,19 @@ export class SlotModal extends Modal {
         else {
             this.aliasSetting.setValue(this.value.alias || '');
             this.aliasSetting.setDisabled(false);
+            
+            // 根据类型更新Alias字段的名称
+            const aliasSettingParent = this.aliasSetting.inputEl.parentElement?.parentElement;
+            if (aliasSettingParent) {
+                const nameEl = aliasSettingParent.querySelector('.setting-item-name');
+                if (nameEl) {
+                    if (this.value.type == InputType.InternalLinkCoverText) {
+                        nameEl.textContent = "显示文本";
+                    } else {
+                        nameEl.textContent = "Alias";
+                    }
+                }
+            }
         }
     }
 
